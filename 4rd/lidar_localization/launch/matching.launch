@@ -1,0 +1,8 @@
+<launch>
+    <param name="is_deviate_origin" value="true" />
+    <param name="initPose" value="1" /><!--1 gnss 2 sacncontext-->
+
+    <node pkg="rviz"  type="rviz"  name="rviz"  args="-d $(find lidar_localization)/rviz/matching.rviz"></node>
+    <node pkg="lidar_localization"  type="data_pretreat_node"  name="data_pretreat_node"  output="screen"></node>
+    <node pkg="lidar_localization"  type="matching_node"  name="matching_node"  output="screen"></node>
+</launch>
