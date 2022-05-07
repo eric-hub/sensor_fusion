@@ -63,11 +63,11 @@ mis_mat_ <<  _T(1)   , -mis_yz  ,  mis_zy  ,
                 mis_xz ,  _T(1)   , -mis_zx  ,  
                -mis_xy ,  mis_yx  ,  _T(1)   ;
               
-  scale_mat_ <<   s_x  ,   _T(0)  ,  _T(0) ,
-                 _T(0) ,    s_y   ,  _T(0) ,  
-                 _T(0) ,   _T(0)  ,   s_z  ;
-                    
-  bias_vec_ <<  b_x , b_y , b_z ; 
+scale_mat_ <<   s_x  ,   _T(0)  ,  _T(0) ,
+                _T(0) ,    s_y   ,  _T(0) ,  
+                _T(0) ,   _T(0)  ,   s_z  ;
+                
+bias_vec_ <<  b_x , b_y , b_z ; 
 ```
 下面对代码进行修改:   
 [here](imu_tk/src/calibration.cpp#L212)
