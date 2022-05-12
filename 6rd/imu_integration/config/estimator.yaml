@@ -1,0 +1,23 @@
+imu:
+    topic_name: /sim/sensor/imu
+    gravity:
+        x:  0.0
+        y:  0.0
+        #gnss_ins_sim的z为 -9.794216,原代码z为-9.81
+        z: -9.794216
+    bias:
+        angular_velocity:
+            x: 0.0
+            y: 0.0
+            z: 0.0
+        linear_acceleration:
+            x: 0.0
+            y: 0.0
+            z: 0.0
+            
+pose:
+    frame_id: inertial
+    topic_name: 
+        ground_truth: /pose/ground_truth
+        estimation: /pose/estimation
+approximate_method: 1 #1中值法 2 欧拉法
