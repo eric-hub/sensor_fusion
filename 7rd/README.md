@@ -128,3 +128,42 @@ EliminateError 对应ppt中的更新后验位姿
 evo_rpe kitti ground_truth.txt fused.txt -r trans_part --delta 100 --plot --plot_mode xyz
 ```
 对比rmse.考虑随机游走：2.687764，不考虑随机游走：2.396791。从结果来看不考虑随机游走误差小些，当然也跟kitti数据有关，任老师说过实际中可以都尝试下，那个优用那个
+### 参数调整
+```bash
+#保存雷达数据
+evo_ape kitti ground_truth.txt laser.txt -r full --plot --plot_mode xy  --save_results ./laser.zip
+#保存fuse数据
+evo_ape kitti ground_truth.txt fused.txt -r full --plot --plot_mode xy  --save_results ./fused.zip
+#数据比对
+evo_res *.zip -p
+```
+1)原始参数结果  
+<img src="images/02.png" alt="02.png" width="500"/><br> 
+2)可以看到lidar精度与fuse精度差不多，但总体精度较低。考虑增加imu置信度，即减小imu的误差   
+修改参数如下   
+<img src="images/03.png" alt="03.png" width="500"/><br> 
+结果如下   
+<img src="images/04.png" alt="04.png" width="500"/><br> 
+3)误差反而增大，并且laser精度变差，理论上应该不变，可能是数据问题。尝试减小laser置信度，即增大lidar误差
+修改参数如下   
+<img src="images/05.png" alt="05.png" width="500"/><br> 
+结果如下   
+<img src="images/06.png" alt="06.png" width="500"/><br> 
+4)lidar精度与初始精度相同，fuse精度优于上次修改，但低于初始参数精度。继续增大imu置信度，进行测试   
+修改参数如下   
+<img src="images/07.png" alt="07.png" width="500"/><br> 
+结果如下   
+<img src="images/08.png" alt="08.png" width="500"/><br> 
+5)效果不是很理想。还原默认参数，减少P置信度，即增大误差，测试下
+修改参数如下   
+<img src="images/09.png" alt="09.png" width="500"/><br> 
+结果如下   
+<img src="images/10.png" alt="10.png" width="500"/><br> 
+6)fuse精度比默认环境稍微好一丢丢，尝试再次降低状态量置信度
+修改参数如下   
+<img src="images/12.png" alt="12.png" width="500"/><br> 
+
+结果如下   
+<img src="images/11.png" alt="11.png" width="500"/><br> 
+精度变差
+多次调整，只有第5次稍微好一点。个人觉得调参需要多次修改参数，进行数据验证，最终确认合适的参数

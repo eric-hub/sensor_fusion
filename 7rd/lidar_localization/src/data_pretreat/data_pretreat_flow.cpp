@@ -35,13 +35,13 @@ bool DataPretreatFlow::Run() {
     if (!ReadData())
         return false;
 
-    if (!InitCalibration()) 
+    if (!InitCalibration())
         return false;
 
     if (!InitGNSS())
         return false;
 
-    while(HasData()) {
+    while (HasData()) {
         if (!ValidData())
             continue;
 
@@ -103,7 +103,14 @@ bool DataPretreatFlow::InitCalibration() {
 bool DataPretreatFlow::InitGNSS() {
     static bool gnss_inited = false;
     if (!gnss_inited) {
-        GNSSData gnss_data = gnss_data_buff_.front();
+        // GNSSData gnss_data = gnss_data_buff_.front();
+        // gnss_data.InitOriginPosition();
+        // gnss_inited = true;
+        GNSSData gnss_data;
+        gnss_data.longitude = 8.390450;
+        gnss_data.latitude = 48.982651;
+        gnss_data.altitude = 116.395850;
+
         gnss_data.InitOriginPosition();
         gnss_inited = true;
     }
@@ -169,11 +176,11 @@ bool DataPretreatFlow::TransformData() {
     gnss_pose_ = Eigen::Matrix4f::Identity();
     // get position from GNSS
     current_gnss_data_.UpdateXYZ();
-    gnss_pose_(0,3) = current_gnss_data_.local_E;
-    gnss_pose_(1,3) = current_gnss_data_.local_N;
-    gnss_pose_(2,3) = current_gnss_data_.local_U;
+    gnss_pose_(0, 3) = current_gnss_data_.local_E;
+    gnss_pose_(1, 3) = current_gnss_data_.local_N;
+    gnss_pose_(2, 3) = current_gnss_data_.local_U;
     // get orientation from IMU:
-    gnss_pose_.block<3,3>(0,0) = current_imu_data_.GetOrientationMatrix();
+    gnss_pose_.block<3, 3>(0, 0) = current_imu_data_.GetOrientationMatrix();
     // this is lidar pose in GNSS/map frame:
     gnss_pose_ *= lidar_to_imu_;
 
@@ -199,15 +206,14 @@ bool DataPretreatFlow::PublishData() {
     imu_pub_ptr_->Publish(current_imu_data_, current_cloud_data_.time);
 
     pos_vel_pub_ptr_->Publish(pos_vel_, current_cloud_data_.time);
-    
+
     //
     // this synced odometry has the following info:
     //
     // a. lidar frame's pose in map
-    // b. lidar frame's velocity 
+    // b. lidar frame's velocity
     gnss_pub_ptr_->Publish(gnss_pose_, current_velocity_data_, current_cloud_data_.time);
 
-    
     return true;
 }
-}
+} // namespace lidar_localization

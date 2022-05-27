@@ -249,7 +249,16 @@ bool KITTIFilteringFlow::InitLocalization(void) {
     Eigen::Vector3f init_vel = current_pos_vel_data_.vel;
 
     // first try to init using scan context query:
-    if (filtering_ptr_->Init(current_cloud_data_, init_vel,
+    // if (filtering_ptr_->Init(current_cloud_data_, init_vel,
+    //                          current_imu_synced_data_)) {
+    static int gnss_count = 0;
+    if (!(gnss_count > 3)) {
+        current_gnss_data_ = gnss_data_buff_.at(gnss_count); //   舍弃GNSS的第三帧数据
+                                                             // std::cout  << " gnss_data_buff_   "   <<  gnss_count  << "  "   <<  current_gnss_data_.pose << std::endl;
+    }
+    gnss_count++;
+
+    if (filtering_ptr_->Init(current_gnss_data_.pose, init_vel,
                              current_imu_synced_data_)) {
         // prompt:
         LOG(INFO) << "Scan Context Localization Init Succeeded." << std::endl;

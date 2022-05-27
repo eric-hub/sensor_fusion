@@ -624,7 +624,8 @@ void ErrorStateKalmanFilter::EliminateError(void) {
     vel_ -= X_.block<3, 1>(kIndexErrorVel, 0);
     // c. orientation:
     // do it!
-    pose_.block<3, 3>(0, 0) = pose_.block<3, 3>(0, 0) * (Eigen::Matrix3d::Identity() - Sophus::SO3d::hat(X_.block<3, 1>(kIndexErrorOri, 0)));
+    pose_.block<3, 3>(0, 0) = pose_.block<3, 3>(0, 0) *
+                              (Eigen::Matrix3d::Identity() - Sophus::SO3d::hat(X_.block<3, 1>(kIndexErrorOri, 0)));
 
     Eigen::Quaterniond q(pose_.block<3, 3>(0, 0));
     q.normalize();
