@@ -68,7 +68,7 @@ $$ -->
 </tr>
 </table>
 
-## 代码补全
+## 二、代码补全
 
 ```C++
 // 1. get w_mid:
@@ -194,20 +194,75 @@ _estimate.b_g += d_b_g_i;
 updateDeltaBiases(d_b_a_i, d_b_g_i);
 ```
 
+轨迹保存部分错了，修改如下:
+```C++
+bool LIOBackEnd::SaveOptimizedPose() {
+    static Eigen::Matrix4f current_pose = Eigen::Matrix4f::Identity();
+
+    if (graph_optimizer_ptr_->GetNodeNum() == 0)
+        return false;
+
+    if (
+        !FileManager::CreateFile(ground_truth_ofs_, trajectory_path_ + "/ground_truth.txt") ||
+        !FileManager::CreateFile(laser_odom_ofs_, trajectory_path_ + "/laser_odom.txt") ||
+        !FileManager::CreateFile(optimized_pose_ofs_, trajectory_path_ + "/optimized.txt"))
+        return false;
+
+    graph_optimizer_ptr_->GetOptimizedKeyFrame(optimized_key_frames_);
+
+    // write GNSS/IMU pose and lidar odometry estimation as trajectory for evo evaluation:
+    for (size_t i = 0; i < optimized_key_frames_.size(); ++i) {
+        // a. ground truth, IMU/GNSS:
+        current_pose = key_frames_deque_.at(i).pose;
+        current_pose(2, 3) = 0.0f;
+        SavePose(laser_odom_ofs_, current_pose);
+        // b. lidar odometry:
+        current_pose = key_gnss_deque_.at(i).pose;
+        current_pose(2, 3) = 0.0f;
+        SavePose(ground_truth_ofs_, current_pose);
+        // c. optimized odometry:
+        current_pose = optimized_key_frames_.at(i).pose;
+        current_pose(2, 3) = 0.0f;
+        SavePose(optimized_pose_ofs_, current_pose);
+    }
+
+    return true;
+}
+```
+
 数据对比
 ```bash
-evo_rpe kitti ground_truth.txt optimized.txt -r trans_part --delta 100 --plot --plot_mode xyz
-
 evo_ape kitti ground_truth.txt optimized.txt -r full --plot --plot_mode xyz
 ```
 
-|         | use_imu                                             | no_imu                                              |
-| ------- | --------------------------------------------------- | --------------------------------------------------- |
-| evo_ape | <img src="images/02.png" alt="02.png" width="500"/> | <img src="images/09.png" alt="09.png" width="500"/> |
-|         | <img src="images/03.png" alt="03.png" width="500">  | <img src="images/10.png" alt="10.png" width="500"/> |
-|         | <img src="images/04.png" alt="04.png" width="500">  | <img src="images/11.png" alt="11.png" width="500"/> |
-| evo_rpe | <img src="images/05.png" alt="05.png" width="500">  | <img src="images/12.png" alt="12.png" width="500"/> |
-|         | <img src="images/06.png" alt="06.png" width="500">  | <img src="images/13.png" alt="13.png" width="500"/> |
-|         | <img src="images/07.png" alt="07.png" width="500">  | <img src="images/14.png" alt="14.png" width="500"/> |
+<!-- evo_rpe kitti ground_truth.txt optimized.txt -r trans_part --delta 100 --plot --plot_mode xyz -->
 
-从结果来看，两种方式都差不多，但误差较大，怀疑是kitti数据问题
+| use_imu                                             | no_imu                                              |
+| --------------------------------------------------- | --------------------------------------------------- |
+| <img src="images/02.png" alt="02.png" width="500"/> | <img src="images/05.png" alt="05.png" width="500"/> |
+| <img src="images/03.png" alt="03.png" width="500">  | <img src="images/06.png" alt="06.png" width="500"/> |
+| <img src="images/04.png" alt="04.png" width="500">  | <img src="images/07.png" alt="07.png" width="500"/> |
+
+
+从结果来看，优化精度差不多，use_imu的轨迹更平滑些。
+
+但后台优化一直是nan，没有查出原因，看输出结果还可以，不确定哪里问题
+
+<img src="images/08.png" alt="08.png" width="500"/>
+
+## 三、融合编码器公式推导
+
+先祭出袁睿大佬给的提示
+
+<img src="images/09.png" alt="09.png" width="500"/>
+
+<table>
+<tr>
+  <td><img src="images/33.jpeg" alt="33.jpeg" width="400"/></td>
+  <td><img src="images/34.jpeg" alt="34.jpeg" width="400"/> </td>
+</tr>
+<tr>
+  <td><img src="images/35.jpeg" alt="35.jpeg" width="400"/></td>
+  <td><img src="images/36.jpeg" alt="36.jpeg" width="400"/> </td>
+</tr>
+</table>

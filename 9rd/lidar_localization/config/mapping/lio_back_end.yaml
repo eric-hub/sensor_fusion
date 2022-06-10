@@ -13,7 +13,7 @@ use_gnss: true
 # b. loop closure
 use_loop_close: true
 # c. IMU pre-integration
-use_imu_pre_integration: false
+use_imu_pre_integration: true
 # c. odo pre-integration
 use_odo_pre_integration: true
 

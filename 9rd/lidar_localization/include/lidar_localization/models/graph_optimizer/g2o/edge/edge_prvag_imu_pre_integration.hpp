@@ -56,8 +56,7 @@ public:
         const Eigen::Vector3d &b_a_j = v1->estimate().b_a;
         const Eigen::Vector3d &b_g_j = v1->estimate().b_g;
 
-        //
-        // TODO: update pre-integration measurement caused by bias change:
+        // TODO: update pre-integration measurement caused by bias change:  更新预积分部分(由于bias的改变，产生的变化)
         //
         if (v0->isUpdated()) {
             Eigen::Vector3d d_b_a_i, d_b_g_i;
@@ -74,11 +73,14 @@ public:
         // _error.block<3, 1>(INDEX_V, 0) = Eigen::Vector3d::Zero();
         // _error.block<3, 1>(INDEX_A, 0) = Eigen::Vector3d::Zero();
         // _error.block<3, 1>(INDEX_G, 0) = Eigen::Vector3d::Zero();
-        const Eigen::Vector3d &alpha_ij = _measurement.block<3, 1>(INDEX_P, 0);
+        const Eigen::Vector3d &alpha_ij = _measurement.block<3, 1>(INDEX_P, 0); //   获取观测值
         const Eigen::Vector3d &theta_ij = _measurement.block<3, 1>(INDEX_R, 0);
         const Eigen::Vector3d &beta_ij = _measurement.block<3, 1>(INDEX_V, 0);
+        Eigen::Quaterniond q_ij = Eigen::Quaterniond(Sophus::SO3d::exp(theta_ij).matrix());
+        Eigen::Quaterniond q_wbi = Eigen::Quaterniond(ori_i.matrix());
+        Eigen::Quaterniond q_wbj = Eigen::Quaterniond(ori_j.matrix());
         _error.block<3, 1>(INDEX_P, 0) = ori_i.inverse().matrix() * (pos_j - pos_i - vel_i * T_ + 0.5 * g_ * T_ * T_) - alpha_ij;
-        _error.block<3, 1>(INDEX_R, 0) = (Sophus::SO3d::exp(theta_ij).inverse() * ori_i.inverse() * ori_j).log();
+        _error.block<3, 1>(INDEX_R, 0) = 2 * (q_ij.conjugate() * (q_wbi.conjugate() * q_wbj)).vec(); //  当theta为小量时，theta 近似于 四元数的虚部的两倍
         _error.block<3, 1>(INDEX_V, 0) = ori_i.inverse() * (vel_j - vel_i + g_ * T_) - beta_ij;
         _error.block<3, 1>(INDEX_A, 0) = b_a_j - b_a_i;
         _error.block<3, 1>(INDEX_G, 0) = b_g_j - b_g_i;
