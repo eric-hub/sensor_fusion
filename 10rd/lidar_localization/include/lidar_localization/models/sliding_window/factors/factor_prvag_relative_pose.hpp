@@ -62,9 +62,10 @@ public:
         //
         // TODO: compute residual:
         //
-        Eigen::Map<Eigen::Matrix<double, 6, 1>> residual(residuals);
-        residual.block<3, 1>(INDEX_P, 0) = ori_i.inverse() * (pos_j - pos_i) - pos_ij;
-        residual.block<3, 1>(INDEX_R, 0) = (ori_i.inverse() * ori_j * ori_ij.inverse()).log();
+        Eigen::Map<Eigen::Matrix<double, 6, 1>> residual(residuals); //  残差 r_P  r_R
+
+        residual.block(INDEX_P, 0, 3, 1) = ori_i.inverse() * (pos_j - pos_i) - pos_ij;
+        residual.block(INDEX_R, 0, 3, 1) = (ori_i.inverse() * ori_j * ori_ij.inverse()).log();
 
         //
         // TODO: compute jacobians:
@@ -72,24 +73,23 @@ public:
         if (jacobians) {
             // compute shared intermediate results:
             const Eigen::Matrix3d R_i_inv = ori_i.inverse().matrix();
-            const Eigen::Matrix3d J_r_inv = JacobianRInv(residual.block<3, 1>(INDEX_R, 0));
-            const Eigen::Vector3d pos_p_ij = ori_i.inverse() * (pos_j - pos_i);
+            const Eigen::Matrix3d J_r_inv = JacobianRInv(residual.block(INDEX_R, 0, 3, 1)); //  右雅克比
+            const Eigen::Vector3d pos_ij = ori_i.inverse() * (pos_j - pos_i);
 
-            if (jacobians[0]) {
+            if (jacobians[0]) { //   残差rL0(rp  rq )  对 T0(p q)  M0(v ba bg) 的雅克比
                 // implement computing:
-                Eigen::Map<Eigen::Matrix<double, 6, 15, Eigen::RowMajor>> jacobian_i(jacobians[0]);
+                Eigen::Map<Eigen::Matrix<double, 6, 15, Eigen::RowMajor>> jacobian_i(jacobians[0]); //  col : rp_i[3] rq_i[3]  row : p[3] q[3] v[3] ba[3] bg[3]
                 jacobian_i.setZero();
 
                 jacobian_i.block<3, 3>(INDEX_P, INDEX_P) = -R_i_inv;
-                jacobian_i.block<3, 3>(INDEX_R, INDEX_R) = -J_r_inv;
-                jacobian_i.block<3, 3>(INDEX_P, INDEX_R) = Sophus::SO3d::hat(pos_p_ij).matrix();
+                jacobian_i.block<3, 3>(INDEX_R, INDEX_R) = -J_r_inv * (ori_ij * ori_j.inverse() * ori_i).matrix();
+                jacobian_i.block<3, 3>(INDEX_P, INDEX_R) = Sophus::SO3d::hat(pos_ij).matrix();
 
-                jacobian_i = sqrt_info * jacobian_i;
+                jacobian_i = sqrt_info * jacobian_i; //   注意 sqrt_i 为对角的协方差矩阵对角线为观测的方差，可理解为传感器的测量误差，用于调整权重用
             }
 
-            if (jacobians[1]) {
+            if (jacobians[1]) { //  残差rL0(rp  rq )  对 T0(p q)  M0(v ba bg) 的雅克比
                 // implement computing:
-
                 Eigen::Map<Eigen::Matrix<double, 6, 15, Eigen::RowMajor>> jacobian_j(jacobians[1]);
                 jacobian_j.setZero();
 
@@ -116,10 +116,13 @@ private:
         double theta = w.norm();
 
         if (theta > 1e-5) {
-            Eigen::Vector3d k = w.normalized();
-            Eigen::Matrix3d K = Sophus::SO3d::hat(k);
+            Eigen::Vector3d a = w.normalized();
+            Eigen::Matrix3d a_hat = Sophus::SO3d::hat(a);
+            double theta_half = 0.5 * theta;
+            double cot_theta = 1.0 / tan(theta_half);
 
-            J_r_inv = J_r_inv + 0.5 * K + (1.0 - (1.0 + std::cos(theta)) * theta / (2.0 * std::sin(theta))) * K * K;
+            J_r_inv = theta_half * cot_theta * J_r_inv + (1.0 - theta_half * cot_theta) * a * a.transpose() +
+                      theta_half * a_hat;
         }
 
         return J_r_inv;

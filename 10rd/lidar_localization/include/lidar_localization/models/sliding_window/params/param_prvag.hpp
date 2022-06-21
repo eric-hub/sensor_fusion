@@ -9,9 +9,9 @@
 
 #include <ceres/ceres.h>
 
-#include <Eigen/Eigen>
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <Eigen/Eigen>
 
 #include <sophus/so3.hpp>
 
@@ -20,11 +20,11 @@ namespace sliding_window {
 class ParamPRVAG : public ceres::LocalParameterization {
 public:
     static const int INDEX_P = 0;
-	static const int INDEX_R = 3;
-	static const int INDEX_V = 6;
-	static const int INDEX_A = 9;
-	static const int INDEX_G = 12;
-    
+    static const int INDEX_R = 3;
+    static const int INDEX_V = 6;
+    static const int INDEX_A = 9;
+    static const int INDEX_G = 12;
+
     virtual bool Plus(const double *x, const double *delta, double *x_plus_delta) const {
         Eigen::Map<const Eigen::Vector3d> pos(x + INDEX_P);
         Eigen::Map<const Eigen::Vector3d> ori(x + INDEX_R);
@@ -51,7 +51,7 @@ public:
         ori_plus = (Sophus::SO3d::exp(ori) * Sophus::SO3d::exp(d_ori)).log();
         vel_plus = vel + d_vel;
         b_a_plus = b_a + d_b_a;
-        b_g_plus = b_g + b_g_plus;
+        b_g_plus = b_g + d_b_g;
 
         return true;
     }

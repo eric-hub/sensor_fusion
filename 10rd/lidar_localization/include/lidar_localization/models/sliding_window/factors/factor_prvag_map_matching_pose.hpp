@@ -58,8 +58,9 @@ public:
         //
 
         Eigen::Map<Eigen::Matrix<double, 6, 1>> residual(residuals);
-        residual.block<3, 1>(INDEX_P, 0) = pos - pos_prior;
-        residual.block<3, 1>(INDEX_R, 0) = (ori * ori_prior.inverse()).log();
+
+        residual.block(INDEX_P, 0, 3, 1) = pos - pos_prior;
+        residual.block(INDEX_R, 0, 3, 1) = (ori * ori_prior.inverse()).log();
 
         //
         // TODO: compute jacobians:
@@ -71,7 +72,10 @@ public:
                 jacobian_prior.setZero();
 
                 jacobian_prior.block<3, 3>(INDEX_P, INDEX_P) = Eigen::Matrix3d::Identity();
-                jacobian_prior.block<3, 3>(INDEX_R, INDEX_R) = JacobianRInv(residual.block<3, 1>(INDEX_R, 0)) * ori_prior.matrix();
+                jacobian_prior.block<3, 3>(INDEX_R, INDEX_R) =
+                    JacobianRInv(
+                        residual.block(INDEX_R, 0, 3, 1)) *
+                    ori_prior.matrix();
 
                 jacobian_prior = sqrt_info * jacobian_prior;
             }
@@ -93,10 +97,13 @@ private:
         double theta = w.norm();
 
         if (theta > 1e-5) {
-            Eigen::Vector3d k = w.normalized();
-            Eigen::Matrix3d K = Sophus::SO3d::hat(k);
+            Eigen::Vector3d a = w.normalized();
+            Eigen::Matrix3d a_hat = Sophus::SO3d::hat(a);
+            double theta_half = 0.5 * theta;
+            double cot_theta = 1.0 / tan(theta_half);
 
-            J_r_inv = J_r_inv + 0.5 * K + (1.0 - (1.0 + std::cos(theta)) * theta / (2.0 * std::sin(theta))) * K * K;
+            J_r_inv = theta_half * cot_theta * J_r_inv + (1.0 - theta_half * cot_theta) * a * a.transpose() +
+                      theta_half * a_hat;
         }
 
         return J_r_inv;
